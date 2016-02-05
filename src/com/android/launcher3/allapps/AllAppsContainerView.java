@@ -19,9 +19,12 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.InsetDrawable;
+import android.preference.PreferenceManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Selection;
 import android.text.SpannableStringBuilder;
@@ -128,7 +131,7 @@ final class SimpleSectionMergeAlgorithm implements AlphabeticalAppsList.MergeAlg
  */
 public class AllAppsContainerView extends BaseContainerView implements DragSource,
         LauncherTransitionable, View.OnTouchListener, View.OnLongClickListener,
-        AllAppsSearchBarController.Callbacks {
+        AllAppsSearchBarController.Callbacks, SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final int MIN_ROWS_IN_MERGED_SECTION_PHONE = 3;
     private static final int MAX_NUM_MERGES_PHONE = 2;
@@ -157,6 +160,10 @@ public class AllAppsContainerView extends BaseContainerView implements DragSourc
     // This coordinate is relative to its parent
     private final Point mIconLastTouchPos = new Point();
 
+    private Context mContext;
+    private SharedPreferences mSharedPrefs;
+    private boolean showSearchBar = true;
+
     private View.OnClickListener mSearchClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -176,6 +183,11 @@ public class AllAppsContainerView extends BaseContainerView implements DragSourc
     public AllAppsContainerView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         Resources res = context.getResources();
+        mContext = context;
+
+        mSharedPrefs = context.getSharedPreferences(LauncherAppState.getSharedPreferencesKey(), Context.MODE_PRIVATE);
+        mSharedPrefs.registerOnSharedPreferenceChangeListener(this);
+        showSearchBar = mSharedPrefs.getBoolean("show_app_drawer_search_bar", true);
 
         mLauncher = (Launcher) context;
         mSectionNamesMargin = res.getDimensionPixelSize(R.dimen.all_apps_grid_view_start_margin);
@@ -241,7 +253,13 @@ public class AllAppsContainerView extends BaseContainerView implements DragSourc
         mSearchBarContainerView.addView(searchBarView);
         mSearchBarContainerView.setVisibility(View.VISIBLE);
         mSearchBarView = searchBarView;
-        setHasSearchBar();
+
+        if (!showSearchBar) {
+            mSearchBarContainerView.setVisibility(View.GONE);
+            setHasSearchBar(false);
+        } else {
+            setHasSearchBar(true);
+        }
 
         updateBackgroundAndPaddings();
     }
@@ -398,7 +416,7 @@ public class AllAppsContainerView extends BaseContainerView implements DragSourc
         }
 
         // Inset the search bar to fit its bounds above the container
-        if (mSearchBarView != null) {
+        if (mSearchBarView != null && showSearchBar) {
             Rect backgroundPadding = new Rect();
             if (mSearchBarView.getBackground() != null) {
                 mSearchBarView.getBackground().getPadding(backgroundPadding);
@@ -409,6 +427,13 @@ public class AllAppsContainerView extends BaseContainerView implements DragSourc
             lp.topMargin = searchBarBounds.top - backgroundPadding.top;
             lp.rightMargin = (getMeasuredWidth() - searchBarBounds.right) - backgroundPadding.right;
             mSearchBarContainerView.requestLayout();
+        }
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+        if (key.equals("show_app_drawer_search_bar")) {
+            mContainerView.invalidate();
         }
     }
 

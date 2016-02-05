@@ -266,4 +266,6 @@
 
     <string name="show_search_bar_home_title">Show search bar on home screen</string>
 
+    <string name="show_search_bar_drawer_title">Show search bar in app drawer</string>
+
 </resources>
