@@ -42,6 +42,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -65,6 +66,7 @@ import android.os.Message;
 import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.preference.PreferenceManager;
 import android.text.Selection;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -130,7 +132,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Launcher extends Activity
         implements View.OnClickListener, OnLongClickListener, LauncherModel.Callbacks,
-                   View.OnTouchListener, PageSwitchListener, LauncherProviderChangeListener {
+                   View.OnTouchListener, PageSwitchListener, LauncherProviderChangeListener
+                   SharedPreferences.OnSharedPreferenceChangeListener {
     static final String TAG = "Launcher";
     static final boolean LOGD = false;
 
@@ -468,6 +471,8 @@ public class Launcher extends Activity
         mSavedState = savedInstanceState;
         restoreState(mSavedState);
 
+        mSharedPrefs.registerOnSharedPreferenceChangeListener(this);
+
         if (PROFILE_STARTUP) {
             android.os.Debug.stopMethodTracing();
         }
@@ -528,6 +533,13 @@ public class Launcher extends Activity
             if (!waitUntilResume(mUpdateOrientationRunnable, true)) {
                 mUpdateOrientationRunnable.run();
             }
+        }
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPrefs, String key) {
+        if (key.equals("show_search_bar_home")) {
+            mWorkspace.invalidate();
         }
     }
 

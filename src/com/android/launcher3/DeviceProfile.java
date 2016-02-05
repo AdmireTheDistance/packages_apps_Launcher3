@@ -20,10 +20,12 @@ import android.appwidget.AppWidgetHostView;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.res.Resources;
+import android.content.SharedPreferences;
 import android.graphics.Paint;
 import android.graphics.Paint.FontMetrics;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.preference.PreferenceManager;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
@@ -97,15 +99,23 @@ public class DeviceProfile {
     private int searchBarSpaceWidthPx;
     private int searchBarSpaceHeightPx;
 
+    private Context mContext;
+    private boolean showSearchBar = true;
+
     public DeviceProfile(Context context, InvariantDeviceProfile inv,
             Point minSize, Point maxSize,
             int width, int height, boolean isLandscape) {
+
+        mContext = context;
 
         this.inv = inv;
         this.isLandscape = isLandscape;
 
         Resources res = context.getResources();
         DisplayMetrics dm = res.getDisplayMetrics();
+
+        SharedPreferences mSharedPrefs = getSharedPreferences(LauncherAppState.getSharedPreferencesKey(), Context.MODE_PRIVATE);
+        showSearchBar = mSharedPrefs.getBoolean("show_search_bar_home", true);
 
         // Constants from resources
         isTablet = res.getBoolean(R.bool.is_tablet);
@@ -196,10 +206,14 @@ public class DeviceProfile {
         hotseatIconSizePx = (int) (Utilities.pxFromDp(inv.hotseatIconSize, dm) * scale);
 
         // Search Bar
-        searchBarSpaceWidthPx = Math.min(widthPx,
+        if (showSearchBar) {
+            searchBarSpaceWidthPx = Math.min(widthPx,
                 res.getDimensionPixelSize(R.dimen.dynamic_grid_search_bar_max_width));
         searchBarSpaceHeightPx = getSearchBarTopOffset()
                 + res.getDimensionPixelSize(R.dimen.dynamic_grid_search_bar_height);
+        } else {
+            searchBarSpaceHeightPx = 0;
+        }
 
         // Calculate the actual text height
         Paint textPaint = new Paint();
